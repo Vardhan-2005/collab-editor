@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html, body, #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    background-color: #080b10;
+    color: #e2e8f0;
+    font-family: 'DM Sans', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0d1117;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #30363d;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #00ffcc44;
+  }
+}
+
+@layer utilities {
+  .glow-cyan {
+    box-shadow: 0 0 20px rgba(0, 255, 204, 0.2), 0 0 40px rgba(0, 255, 204, 0.1);
+  }
+
+  .glow-violet {
+    box-shadow: 0 0 20px rgba(191, 95, 255, 0.2), 0 0 40px rgba(191, 95, 255, 0.1);
+  }
+
+  .glass {
+    background: rgba(13, 17, 23, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .text-glow-cyan {
+    text-shadow: 0 0 12px rgba(0, 255, 204, 0.6);
+  }
+
+  .text-glow-violet {
+    text-shadow: 0 0 12px rgba(191, 95, 255, 0.6);
+  }
+
+  .border-glow-cyan {
+    border-color: rgba(0, 255, 204, 0.4);
+    box-shadow: 0 0 0 1px rgba(0, 255, 204, 0.1) inset,
+                0 0 16px rgba(0, 255, 204, 0.1);
+  }
+
+  .gradient-bg {
+    background: linear-gradient(
+      135deg,
+      #080b10 0%,
+      #0d1117 30%,
+      #0f1724 60%,
+      #080b10 100%
+    );
+    background-size: 400% 400%;
+    animation: gradientShift 12s ease infinite;
+  }
+}
+
+/* Monaco editor override for dark theme integration */
+.monaco-editor,
+.monaco-editor-background,
+.monaco-editor .margin {
+  background-color: #080b10 !important;
+}
