@@ -72,25 +72,6 @@ def health():
     return jsonify({'status': 'ok', 'time': datetime.utcnow().isoformat()})
 
 
-# ─── SPA Fallback — must come AFTER all /api routes ───────────────────────────
-@app.route('/', defaults={'path': ''})
-@app.route('/<path:path>')
-def serve_spa(path):
-    """
-    Serve the React SPA for every non-API route.
-
-    How it works:
-    1. If 'path' matches a real file in client/dist (e.g. assets/index-abc.js),
-       send that file directly so hashed JS/CSS bundles load correctly.
-    2. Otherwise fall back to index.html and let React Router take over.
-       This is what eliminates the 404 on hard-refresh of /room/ABCD1234.
-    """
-    static_dir = app.static_folder
-    if path and os.path.exists(os.path.join(static_dir, path)):
-        return send_from_directory(static_dir, path)
-    return send_from_directory(static_dir, 'index.html')
-
-
 @app.route('/api/auth/login', methods=['POST'])
 def login():
     """Register or retrieve a user by username."""
@@ -342,17 +323,26 @@ def on_typing_stop(data):
         'isTyping': False,
     }, room=user_info['room_id'], include_self=False)
 
+init_db()
+
+# ─── SPA Fallback — must come AFTER all /api routes ───────────────────────────
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve_spa(path):
+    """
+    Serve the React SPA for every non-API route.
+
+    1. If 'path' matches a real file in client/dist (e.g. assets/index-abc.js),
+       send that file directly so hashed JS/CSS bundles load correctly.
+    2. Otherwise fall back to index.html and let React Router take over.
+    """
+    static_dir = app.static_folder
+    if path and os.path.exists(os.path.join(static_dir, path)):
+        return send_from_directory(static_dir, path)
+    return send_from_directory(static_dir, 'index.html')
+
 
 # ─── Entry Point ──────────────────────────────────────────────────────────────
 if __name__ == '__main__':
-    init_db()
-    port = int(os.environ.get('PORT', 10000))
-    debug = os.environ.get('FLASK_ENV', 'development') == 'development'
-    print(f'🚀 Server running on http://localhost:{port}')
-    socketio.run(
-    app,
-    host='0.0.0.0',
-    port=port,
-    debug=debug,
-    allow_unsafe_werkzeug=True
-)
+    port = int(os.environ.get('PORT', 5000))
+    socketio.run(app, host='0.0.0.0', port=port)

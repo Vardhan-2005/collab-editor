@@ -1,0 +1,38 @@
+services:
+  # ── Flask/SocketIO Web Service ─────────────────────────────────────────────
+  - type: web
+    name: collab-editor-server
+    runtime: python
+    rootDir: server
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --worker-class geventwebsocket.gunicorn.workers.GeventWebSocketWorker --workers 1 --bind 0.0.0.0:$PORT app:app
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true          # Render auto-generates a secure random value
+      - key: ALLOWED_ORIGINS
+        value: https://collab-editor-client.onrender.com   # ← update to your actual Static Site URL
+      - key: DB_PATH
+        value: /var/data/collab_editor.db
+    disk:
+      name: sqlite-data
+      mountPath: /var/data
+      sizeGB: 1
+
+  # ── React Static Site ─────────────────────────────────────────────────────
+  - type: web
+    name: collab-editor-client
+    runtime: static
+    rootDir: client
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    routes:
+      # Send all paths to index.html so React Router handles client-side nav
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      # Vite embeds this at build time — point it at your server service URL
+      - key: VITE_API_URL
+        value: https://collab-editor-server.onrender.com
