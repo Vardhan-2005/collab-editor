@@ -29,12 +29,14 @@ socketio = SocketIO(
     engineio_logger=False
 )
 
+# ✅ IMPORTANT: Initialize DB on startup
+with app.app_context():
+    init_db()
+
 # ─── In-Memory State ───────────────────────────────────────
 
 active_rooms: dict[str, dict] = {}
 connected_users: dict[str, dict] = {}
-
-# 🖐 Edit lock store
 edit_locks: dict[str, str | None] = {}
 
 USER_COLORS = [
@@ -115,7 +117,12 @@ def get_room(room_id):
             return jsonify({'error': 'Room not found'}), 404
 
         session = db.execute(
-            'SELECT content FROM saved_sessions WHERE room_id = ? ORDER BY updated_at DESC LIMIT 1',
+            '''
+            SELECT content FROM saved_sessions
+            WHERE room_id = ?
+            ORDER BY updated_at DESC
+            LIMIT 1
+            ''',
             (room_id,)
         ).fetchone()
 
@@ -146,7 +153,6 @@ def on_disconnect():
     if room_id in active_rooms:
         active_rooms[room_id].pop(user_id, None)
 
-    # 🖐 Release edit lock if held
     if edit_locks.get(room_id) == user_id:
         edit_locks[room_id] = None
         emit('edit_access_changed', {'userId': None}, room=room_id)
@@ -178,9 +184,7 @@ def on_join_room(data):
     }
 
     emit('room_joined', {'roomId': room_id})
-    emit('edit_access_changed', {
-        'userId': edit_locks.get(room_id)
-    })
+    emit('edit_access_changed', {'userId': edit_locks.get(room_id)})
 
 
 @socketio.on('code_change')
@@ -195,8 +199,6 @@ def on_code_change(data):
         'userId': user_info['user_id']
     }, room=user_info['room_id'], include_self=False)
 
-
-# ─── 🖐 EDIT ACCESS EVENTS ─────────────────────────────────
 
 @socketio.on('request_edit_access')
 def handle_request_edit_access():
