@@ -17,6 +17,7 @@ export default function EditorPage({ user, onLeave }) {
   const { userId, username, roomId } = user
   const editorRef = useRef(null)
   const contentRef = useRef('') // latest content for auto-save
+  const debounceRef = useRef(null)
   const [language, setLanguage] = useState('javascript')
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [editorFocused, setEditorFocused] = useState(false)
@@ -55,11 +56,19 @@ export default function EditorPage({ user, onLeave }) {
   useAutoSave(roomId, () => contentRef.current)
 
   // ── Editor change handler ───────────────────────────────────
-  function handleEditorChange(value) {
-    contentRef.current = value || ''
-    emitCodeChange(value || '')
-    emitTyping()
-  }
+    function handleEditorChange(value) {
+      const newValue = value || ''
+      contentRef.current = newValue
+      
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current)
+      }
+    
+      debounceRef.current = setTimeout(() => {
+        emitCodeChange(newValue)
+        emitTyping()
+      }, 60) // 60ms debounce
+    }
 
   // ── Monaco mount ────────────────────────────────────────────
   function handleEditorMount(editor, monaco) {
