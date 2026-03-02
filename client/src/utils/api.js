@@ -2,7 +2,7 @@
  * API helpers for REST endpoints
  */
 
-const BASE = '/api'
+const BASE = `${import.meta.env.VITE_API_URL}/api`
 
 async function request(path, options = {}) {
   const res = await fetch(`${BASE}${path}`, {
@@ -10,8 +10,11 @@ async function request(path, options = {}) {
     ...options,
     body: options.body ? JSON.stringify(options.body) : undefined,
   })
+
   const data = await res.json()
+
   if (!res.ok) throw new Error(data.error || 'Request failed')
+
   return data
 }
 
