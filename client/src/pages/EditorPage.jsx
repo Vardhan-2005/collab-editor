@@ -35,14 +35,18 @@ export default function EditorPage({ user, onLeave }) {
       model.setValue(newContent)
       contentRef.current = newContent
     } else {
-      // For remote updates: replace content while preserving cursor position
-      const position = editor.getPosition()
-      const scrollTop = editor.getScrollTop()
-      model.setValue(newContent)
-      if (position) editor.setPosition(position)
-      editor.setScrollTop(scrollTop)
-      contentRef.current = newContent
-    }
+  if (model.getValue() !== newContent) {
+    model.pushEditOperations(
+      [],
+      [{
+        range: model.getFullModelRange(),
+        text: newContent
+      }],
+      () => null
+    )
+    contentRef.current = newContent
+  }
+}
   }, [])
 
   // ── Socket connection ────────────────────────────────────────
