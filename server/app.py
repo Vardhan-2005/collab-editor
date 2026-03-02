@@ -36,7 +36,6 @@ CORS(app, origins=os.environ.get('ALLOWED_ORIGINS', '*').split(','))
 socketio = SocketIO(
     app,
     cors_allowed_origins='*',
-    async_mode='threading',
     logger=False,
     engineio_logger=False
 )
