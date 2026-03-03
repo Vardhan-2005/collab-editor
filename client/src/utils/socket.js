@@ -5,11 +5,11 @@
 
 import { io } from 'socket.io-client'
 
-// Use the same backend URL as REST API
-const SERVER_URL = import.meta.env.VITE_API_URL
+// Use the dedicated socket server URL; fall back to API URL if only one is set
+const SERVER_URL = import.meta.env.VITE_SERVER_URL || import.meta.env.VITE_API_URL
 
 if (!SERVER_URL) {
-  throw new Error("VITE_API_URL is not defined")
+  throw new Error("VITE_SERVER_URL is not defined")
 }
 
 let socket = null

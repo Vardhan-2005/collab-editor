@@ -21,12 +21,14 @@ export function useSocket({ roomId, userId, username, onCodeUpdate, onNotificati
 
     // ── Handlers ─────────────────────────────────────────────
     socket.on('room_joined', ({ color, initialContent, activeUsers: users }) => {
-      setMyColor(color)
-      setActiveUsers(users)
+      if (color) setMyColor(color)
+      if (users) setActiveUsers(users)
       // Load initial content without triggering a broadcast
-      isLocalChange.current = true
-      onCodeUpdate?.(initialContent, true) // true = initial load
-      setTimeout(() => { isLocalChange.current = false }, 100)
+      if (initialContent !== undefined) {
+        isLocalChange.current = true
+        onCodeUpdate?.(initialContent, true) // true = initial load
+        setTimeout(() => { isLocalChange.current = false }, 100)
+      }
     })
 
     socket.on('user_joined', ({ username: name, activeUsers: users }) => {

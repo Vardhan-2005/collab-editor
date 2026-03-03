@@ -28,16 +28,20 @@ export default function EditorPage({ user, onLeave }) {
 
   const { notifications, addNotification } = useNotifications()
 
-  // ── Listen for edit lock changes ─────────────────────────
+  // ── Listen for edit lock + language changes ─────────────────────────
   useEffect(() => {
     const socket = getSocket()
 
-    socket.on('edit_access_changed', ({ userId }) => {
-      setEditOwner(userId)
-    })
+    // Use named handlers so socket.off() removes only THIS listener
+    const onEditAccess = ({ userId: uid }) => setEditOwner(uid)
+    const onLangChange = ({ language: lang }) => setLanguage(lang)
+
+    socket.on('edit_access_changed', onEditAccess)
+    socket.on('language_change', onLangChange)
 
     return () => {
-      socket.off('edit_access_changed')
+      socket.off('edit_access_changed', onEditAccess)
+      socket.off('language_change', onLangChange)
     }
   }, [])
 
@@ -118,6 +122,17 @@ export default function EditorPage({ user, onLeave }) {
       <header className="flex items-center px-4 h-12 border-b border-base-700 glass z-10 flex-shrink-0">
 
         <div className="flex items-center gap-2 mr-6">
+          <button
+            onClick={() => setSidebarOpen(prev => !prev)}
+            className="p-1.5 rounded-md hover:bg-white/10 transition-colors mr-1"
+            aria-label="Toggle sidebar"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <rect y="2" width="16" height="2" rx="1"/>
+              <rect y="7" width="16" height="2" rx="1"/>
+              <rect y="12" width="16" height="2" rx="1"/>
+            </svg>
+          </button>
           <span className="font-semibold text-sm text-white hidden sm:block">
             Code<span style={{ color: '#00ffcc' }}>Sync</span>
           </span>
@@ -158,7 +173,30 @@ export default function EditorPage({ user, onLeave }) {
         </div>
       </header>
 
+      {/* Language tab bar - changes are broadcast to all clients */}
+      <div className="flex items-center gap-1 px-3 py-1.5 border-b border-base-700 bg-base-900 flex-shrink-0 overflow-x-auto">
+        {LANGUAGES.map(lang => (
+          <button
+            key={lang}
+            onClick={() => {
+              setLanguage(lang)
+              getSocket().emit('language_change', { language: lang, roomId })
+            }}
+            className={`px-3 py-1 rounded text-xs font-mono transition-all ${
+              language === lang
+                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40'
+                : 'text-slate-500 hover:text-slate-300'
+            }`}
+          >
+            {lang}
+          </button>
+        ))}
+      </div>
+
       <div className="flex flex-1 overflow-hidden">
+        {sidebarOpen && (
+          <UserList users={activeUsers} typingUsers={typingUsers} myColor={myColor} />
+        )}
         <div className="flex-1 overflow-hidden relative">
           <Editor
             height="100%"

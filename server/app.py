@@ -155,9 +155,9 @@ def on_disconnect():
 
     if edit_locks.get(room_id) == user_id:
         edit_locks[room_id] = None
-        emit('edit_access_changed', {'userId': None}, room=room_id)
+        socketio.emit('edit_access_changed', {'userId': None}, room=room_id)
 
-    emit('user_left', {'userId': user_id}, room=room_id)
+    socketio.emit('user_left', {'userId': user_id, 'username': user_info.get('username', '')}, room=room_id)
 
 
 @socketio.on('join_room')
@@ -183,7 +183,35 @@ def on_join_room(data):
         'room_id': room_id
     }
 
-    emit('room_joined', {'roomId': room_id})
+    color = active_rooms[room_id][user_id]['color']
+
+    # Fetch last saved content so the joining client gets current state
+    initial_content = ''
+    with get_db() as db:
+        session = db.execute(
+            'SELECT content FROM saved_sessions WHERE room_id = ? ORDER BY updated_at DESC LIMIT 1',
+            (room_id,)
+        ).fetchone()
+        if session:
+            initial_content = session['content']
+
+    active_user_list = [
+        {'userId': uid, 'username': u['username'], 'color': u['color']}
+        for uid, u in active_rooms[room_id].items()
+    ]
+
+    emit('room_joined', {
+        'roomId': room_id,
+        'color': color,
+        'initialContent': initial_content,
+        'activeUsers': active_user_list,
+    })
+    # Notify others already in the room
+    emit('user_joined', {
+        'username': username,
+        'userId': user_id,
+        'activeUsers': active_user_list,
+    }, room=room_id, include_self=False)
     emit('edit_access_changed', {'userId': edit_locks.get(room_id)})
 
 
@@ -200,6 +228,19 @@ def on_code_change(data):
     }, room=user_info['room_id'], include_self=False)
 
 
+@socketio.on('language_change')
+def on_language_change(data):
+    sid = request.sid
+    user_info = connected_users.get(sid)
+    if not user_info:
+        return
+    # Broadcast the language change to everyone else in the room
+    socketio.emit('language_change',
+        {'language': data.get('language')},
+        room=user_info['room_id'],
+        include_self=False)
+
+
 @socketio.on('request_edit_access')
 def handle_request_edit_access():
     sid = request.sid
@@ -212,7 +253,7 @@ def handle_request_edit_access():
 
     if not edit_locks.get(room_id):
         edit_locks[room_id] = user_id
-        emit('edit_access_changed', {'userId': user_id}, room=room_id)
+        socketio.emit('edit_access_changed', {'userId': user_id}, room=room_id)
 
 
 @socketio.on('release_edit_access')
@@ -227,7 +268,7 @@ def handle_release_edit_access():
 
     if edit_locks.get(room_id) == user_id:
         edit_locks[room_id] = None
-        emit('edit_access_changed', {'userId': None}, room=room_id)
+        socketio.emit('edit_access_changed', {'userId': None}, room=room_id)
 
 
 # ─── SPA Fallback ─────────────────────────────────────────
